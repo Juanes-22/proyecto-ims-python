@@ -75,7 +75,12 @@ def main():
                 uploaded_file = False
 
                 try:
-                    gauge_value = ble_resources.read_gauge_value(gauge_service)
+                    # read gauge reading from BLE peripheral
+                    gauge_reading = ble_resources.read_gauge_reading(
+                        gauge_service,
+                        APP_PARAMETERS['ble']['char_uuid'])
+
+                    print(f"Gauge value: {round(gauge_reading, 2)}")
                     
                     if not csv_created:
                         # setup logger file name
@@ -87,7 +92,7 @@ def main():
                     
                     if( time.time() - logger_start_time >= DATA_LOGGER_INTERVAL_IN_SECONDS ):
                         # log gauge reading to CSV file
-                        lg.collect_data(gauge_value)
+                        lg.collect_data(gauge_reading)
                         lg.log_data()
                         lg.print_data()
                         
@@ -95,14 +100,13 @@ def main():
             
                     if( time.time() - ubidots_start_time >= UBIDOTS_PUBLISH_INTERVAL_IN_SECONDS ):
                         # publish data to ubidots MQTT broker
-                        ubidots_resources.mqtt_publish(gauge_value)
+                        ubidots_resources.mqtt_publish(gauge_reading)
             
                         ubidots_start_time = time.time()
                 
-                except Exception as e:
+                except btle.BTLEException as e:
                     if uploaded_file == False:
                         print(f"Failed to connect to BLE peripheral {APP_PARAMETERS.ble.mac_address}...")
-                        print(e)
 
                         file_path = os.path.join(os.getcwd(), "src", "csv_logger", "data", lg.file_name)
                         
@@ -114,7 +118,7 @@ def main():
                         
                         uploaded_file = True
                   
-        except Exception as e:
+        except btle.BTLEException as e:
             mac = APP_PARAMETERS["ble"]["mac_address"]
             print(f"Failed to connect to BLE peripheral {mac}...")
             #print(e)
