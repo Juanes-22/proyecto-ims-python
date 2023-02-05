@@ -7,7 +7,7 @@ class Ubidots():
     self.client.username_pw_set(token, "")
     self.client.connect(broker, 1883, 60)
 
-  def mqtt_publish(self, client: mqtt.Client, topic: str, value: float):
+  def mqtt_publish(self, topic: str, value: float):
     ''' MQTT publish message function '''
     
     print('-' * 120)
@@ -16,4 +16,4 @@ class Ubidots():
     # send a message to the device topic
     msg = '{"value":'+str(value)+'}'
     print(msg)
-    client.publish(topic, payload=msg, qos=0, retain=False)
+    self.client.publish(topic, payload=msg, qos=0, retain=False)

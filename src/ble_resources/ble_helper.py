@@ -21,6 +21,7 @@ def read_gauge_reading(service: btle.Service, char_uuid: str) -> float:
   """Returns temperature from BLE Service in celsius"""
   gauge_reading_char = service.getCharacteristics(char_uuid)[0]
   gauge_reading = gauge_reading_char.read()
+  gauge_reading = byte_array_to_int(gauge_reading)
   return gauge_reading
 
 def read_temperature(service: btle.Service) -> float:

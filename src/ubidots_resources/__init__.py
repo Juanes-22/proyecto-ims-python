@@ -1,1 +1,1 @@
-from ubidots_resources.ubidots_helper import *
+from ubidots_resources.ubidots import *

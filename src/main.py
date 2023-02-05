@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from bluepy import btle
 
 import ble_resources
-import ubidots_resources
+from ubidots_resources import Ubidots
 from csv_logger import Logger
 from gdrive_exporter import GoogleDrive
 
@@ -20,14 +20,15 @@ UBIDOTS_PUBLISH_INTERVAL_IN_SECONDS = 2
 
 APP_PARAMETERS = {
     'ble': {
-        'mac_address': '02:1c:e7:76:cd:25',
+        'mac_address': 'de:9c:c4:f3:2c:b6',
         'service_uuid': '68D2E014-B38D-11EC-B909-0242AC120002',
         'char_uuid': '68D2E015-B38D-11EC-B909-0242AC120002',
     }, 
     'ubidots': {
         'token': os.getenv('UBIDOTS_TOKEN'),
         'device_label': 'beaglebone-green-wireless',
-        'variable_label': 'strain-gauge-reading'
+        'variable_label': 'strain-gauge-reading',
+        'broker': 'industrial.api.ubidots.com'
     },
     'gdrive': {
         'parent_folder_id': os.getenv('GDRIVE_PARENT_FOLDER_ID'),
@@ -44,12 +45,20 @@ def main():
     Repository: <https://github.com/Juanes-22/ProyectoIMS>
     """)
 
+    # setup ubidots
+    ubi = Ubidots(
+        token=APP_PARAMETERS['ubidots']['token'],
+        broker=APP_PARAMETERS['ubidots']['broker']
+    )
+
     # setup CSV data logger for gauge readings
     lg = Logger()
     
     # set up google drive api for log exporting
     gd = GoogleDrive()
 
+    uploaded_file = False
+    
     while True:
         try:
             csv_created = False
@@ -70,15 +79,11 @@ def main():
             
             # BLE connection is stablished, data reception starts
             while True:
-                print("\n")
-
-                uploaded_file = False
-
                 try:
                     # read gauge reading from BLE peripheral
                     gauge_reading = ble_resources.read_gauge_reading(
-                        gauge_service,
-                        APP_PARAMETERS['ble']['char_uuid'])
+                        service=gauge_service,
+                        char_uuid=APP_PARAMETERS['ble']['char_uuid'])
 
                     print(f"Gauge value: {round(gauge_reading, 2)}")
                     
@@ -100,28 +105,38 @@ def main():
             
                     if( time.time() - ubidots_start_time >= UBIDOTS_PUBLISH_INTERVAL_IN_SECONDS ):
                         # publish data to ubidots MQTT broker
-                        ubidots_resources.mqtt_publish(gauge_reading)
+                        ubi.mqtt_publish(
+                            value=gauge_reading,
+                            topic=f"/v1.6/devices/{APP_PARAMETERS['ubidots']['device_label']}/{APP_PARAMETERS['ubidots']['variable_label']}"
+                        )
             
                         ubidots_start_time = time.time()
                 
                 except btle.BTLEException as e:
                     if uploaded_file == False:
-                        print(f"Failed to connect to BLE peripheral {APP_PARAMETERS.ble.mac_address}...")
+                        #print(f"Failed to connect to BLE peripheral {APP_PARAMETERS.ble.mac_address}...")
+                        print(e)
 
                         file_path = os.path.join(os.getcwd(), "src", "csv_logger", "data", lg.file_name)
                         
                         # export file to google drive
                         gd.upload_csv_file(
-                            file_path,
-                            [APP_PARAMETERS['gdrive']['parent_folder_id']],
-                            APP_PARAMETERS['gdrive']['folder_name'])
+                            parents=[APP_PARAMETERS['gdrive']['parent_folder_id']],
+                            file_path=file_path,
+                            folder_name=APP_PARAMETERS['gdrive']['folder_name'])
                         
                         uploaded_file = True
-                  
+                    break
+                except Exception as e:
+                    print(e)
+                    break
+
         except btle.BTLEException as e:
             mac = APP_PARAMETERS["ble"]["mac_address"]
-            print(f"Failed to connect to BLE peripheral {mac}...")
-            #print(e)
+            #print(f"Failed to connect to BLE peripheral {mac}...")
+            print(e)
+        except Exception as e:
+            print(e)
 
 if __name__ == '__main__':
     main()

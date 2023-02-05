@@ -1,4 +1,6 @@
 import csv
+import os
+import os.path
 from pathlib import Path
 from datetime import datetime
 
@@ -28,11 +30,11 @@ class Logger:
 
         field_names = ['time_stamp', 'value']
 
-        if not Path('csv_logger/data/' + self.file_name).exists():
-            with open('csv_logger/data/' + self.file_name, 'w', newline='') as csv_file:
+        if not Path(os.path.abspath(os.getcwd()) + '/src/csv_logger/data/' + self.file_name).exists():
+            with open(os.path.abspath(os.getcwd()) + '/src/csv_logger/data/' + self.file_name, 'w', newline='') as csv_file:
                 csv_writer = csv.DictWriter(csv_file, fieldnames=field_names, delimiter=';')
                 csv_writer.writeheader()
 
-        with open('csv_logger/data/' + self.file_name, 'a', newline='') as csv_file:
+        with open(os.path.abspath(os.getcwd()) + '/src/csv_logger/data/' + self.file_name, 'a', newline='') as csv_file:
             csv_writer = csv.DictWriter(csv_file, fieldnames=field_names, delimiter=';')
             csv_writer.writerow(self.data_dict)
