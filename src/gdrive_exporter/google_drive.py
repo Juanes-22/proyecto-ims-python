@@ -16,11 +16,11 @@ class GoogleDrive:
         # create drive api client
         self.service = build("drive", "v3", credentials=self.creds)
 
-    def upload_csv_file(self, file_path: str, parents: list=None) -> None:
+    def upload_csv_file(self, file_path: str, parents: list=None, folder_name: str) -> None:
         try:
             # call the Drive v3 API
             response = self.service.files().list(
-                q="name='Mediciones' and mimeType='application/vnd.google-apps.folder'",
+                q=f"name='{self.folder_name}' and mimeType='application/vnd.google-apps.folder'",
                 spaces='drive'
             ).execute()
 

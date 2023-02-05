@@ -1,21 +1,18 @@
 import os
 import os.path
-
 import time
 from datetime import datetime
-
 from dotenv import load_dotenv
-
-from csv_logger import Logger
-import ble_ubidots
 
 from bluepy import btle
 
-from ble_ubidots.my_delegate import MyDelegate
-import ble_ubidots.constants as c
-
+import ble_resources
+import ubidots_resources
+from csv_logger import Logger
 from gdrive_exporter import GoogleDrive
 
+
+# load environmental variables
 load_dotenv()
 
 DATA_LOGGER_INTERVAL_IN_SECONDS = 0.1
@@ -38,32 +35,19 @@ APP_PARAMETERS = {
     }
 }
 
-def ble_setup():
-    # setup BLE peripheral 
-    p = btle.Peripheral(c.mac_address)
-    p.setDelegate(MyDelegate())
-    
-    # setup to turn notifications on
-    svc = p.getServiceByUUID(c.service_uuid)
-    ch = svc.getCharacteristics(c.char_uuid)[0]
-    
-    setup_data = bytes(b'\x01\x00')
-    p.writeCharacteristic(ch.valHandle + 1, setup_data)
-    ch_data = p.readCharacteristic(ch.valHandle + 1)
 
-
-def run():
+def main():
     print("""
     Project: IMS IoT gauge
     Author: Juan Garcia
     Email: <juane.garciam@upb.edu.co>
-    Repository: <https://github.com/Juanes-22/proyecto-ims>
+    Repository: <https://github.com/Juanes-22/ProyectoIMS>
     """)
 
     # setup CSV data logger for gauge readings
     lg = Logger()
     
-    # set up google drive api
+    # set up google drive api for log exporting
     gd = GoogleDrive()
 
     while True:
@@ -71,19 +55,27 @@ def run():
             csv_created = False
 
             # set up BLE peripheral
-            ble_setup()
+            print("Connecting...")
+            p = btle.Peripheral(APP_PARAMETERS['ble']['mac_address'])
+
+            print("Discovering Services...")
+            _ = p.services
+            gauge_service = p.getServiceByUUID(APP_PARAMETERS['ble']['service_uuid'])
+            
+            print("Discovering Characteristics...")
+            _ = gauge_service.getCharacteristics()
 
             logger_start_time = time.time()
             ubidots_start_time = time.time()
             
             # BLE connection is stablished, data reception starts
             while True:
+                print("\n")
+
                 uploaded_file = False
 
                 try:
-                    # peripheral wait for central notifications
-                    if p.waitForNotifications(0.01):
-                        continue
+                    gauge_value = ble_resources.read_gauge_value(gauge_service)
                     
                     if not csv_created:
                         # setup logger file name
@@ -92,9 +84,6 @@ def run():
                         lg.file_name = "{}.csv".format(formated_timestamp)
 
                         csv_created = True
-                    
-                    # received and unpacked BLE value from gauge
-                    gauge_value = ble_ubidots.MyDelegate.unpacked_data
                     
                     if( time.time() - logger_start_time >= DATA_LOGGER_INTERVAL_IN_SECONDS ):
                         # log gauge reading to CSV file
@@ -106,7 +95,7 @@ def run():
             
                     if( time.time() - ubidots_start_time >= UBIDOTS_PUBLISH_INTERVAL_IN_SECONDS ):
                         # publish data to ubidots MQTT broker
-                        ble_ubidots.mqtt_publish(gauge_value)
+                        ubidots_resources.mqtt_publish(gauge_value)
             
                         ubidots_start_time = time.time()
                 
@@ -118,7 +107,11 @@ def run():
                         file_path = os.path.join(os.getcwd(), "src", "csv_logger", "data", lg.file_name)
                         
                         # export file to google drive
-                        gd.upload_csv_file(file_path, [APP_PARAMETERS["gdrive"]["parent_folder_id"]])
+                        gd.upload_csv_file(
+                            file_path,
+                            [APP_PARAMETERS['gdrive']['parent_folder_id']],
+                            APP_PARAMETERS['gdrive']['folder_name'])
+                        
                         uploaded_file = True
                   
         except Exception as e:
@@ -126,6 +119,5 @@ def run():
             print(f"Failed to connect to BLE peripheral {mac}...")
             #print(e)
 
-
 if __name__ == '__main__':
-    run()
+    main()
