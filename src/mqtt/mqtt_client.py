@@ -20,22 +20,22 @@ class MQTTClient():
             self.client.username_pw_set(username=self.username, password=self.password)
             self.client.connect(self.broker, self.port)
         except Exception as e:
-            logging.error("\t[MQTT] Failed to connect to broker. Error: ", e)
+            logging.error("\t[MQTT] Failed to connect to broker.")
 
     def publish(self, topic: str, msg: str) -> None:
         try:
-            self.client.publish(topic=topic, message=msg)
+            self.client.publish(topic, msg)
         except Exception as e:
-            logging.error("\t[MQTT] Failed to publish message. Error: ", e)
+            logging.error("\t[MQTT] Failed to publish message.")
 
     def on_connect(self, client, userdata, flags, rc) -> None:
         if rc == 0:
             logging.info("\t[MQTT] Connected to broker successfully")
         else:
-            logging.error("\t[MQTT] Failed to connect to broker. Error code: ", rc)        
+            logging.error(f"\t[MQTT] Failed to connect to broker. Error code: {rc}")        
 
     def on_publish(self, client, userdata, mid) -> None:
-        logging.info("\t[MQTT] Message published. Message ID: ", mid)
+        logging.info(f"\t[MQTT] Message published. Message ID: {mid}")
 
     def on_subscribe(self, client, userdata, mid, granted_qos) -> None:
         logging.info("\t[MQTT] Subscribed to topic successfully")

@@ -54,15 +54,17 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # # setup ubidots
-    # ubi = MQTTClient(
-    #     broker=APP_PARAMETERS['ubidots']['broker'],
-    #     username=APP_PARAMETERS['ubidots']['token'],
-    #     password="",
-    # )
+    # setup ubidots
+    ubi = MQTTClient(
+        broker=APP_PARAMETERS['ubidots']['broker'],
+        username=APP_PARAMETERS['ubidots']['token'],
+        password="",
+    )
 
-    # # setup CSV data logger for gauge readings
-    # lg = Logger()
+    ubi.connect()
+
+    # setup CSV data logger for gauge readings
+    lg = Logger()
     
     # # set up google drive api for csv upload
     # gd = GoogleDrive(
@@ -98,26 +100,26 @@ def main():
                     
                     if not csv_created:
                         # setup csv file name
-                        # timestamp = datetime.now()
-                        # formated_timestamp = datetime.strftime(timestamp, "%Y-%m-%d %H %M %S")
-                        # lg.file_name = f"{formated_timestamp}.csv"
+                        timestamp = datetime.now()
+                        formated_timestamp = datetime.strftime(timestamp, "%Y-%m-%d %H %M %S")
+                        lg.file_name = f"{formated_timestamp}.csv"
 
                         csv_created = True
                     
                     # log gauge reading to CSV file
                     if( time.time() - logger_start_time >= DATA_LOGGER_INTERVAL_IN_SECONDS ):
-                        # lg.collect_data(gauge_reading)
-                        # lg.log_data()
-                        # lg.print_data()
+                        lg.collect_data(gauge_reading)
+                        lg.log_data()
+                        lg.print_data()
                         
                         logger_start_time = time.time()
 
                     # publish data to ubidots MQTT broker
                     if( time.time() - ubidots_start_time >= UBIDOTS_PUBLISH_INTERVAL_IN_SECONDS ):
-                        # ubi.publish(
-                        #     msg='{"value": ' + str(gauge_reading) + '}',
-                        #     topic=f"/v1.6/devices/{APP_PARAMETERS['ubidots']['device_label']}/{APP_PARAMETERS['ubidots']['variable_label']}"
-                        # )
+                        ubi.publish(
+                            msg='{"value": ' + str(gauge_reading) + '}',
+                            topic=f"/v1.6/devices/{APP_PARAMETERS['ubidots']['device_label']}/{APP_PARAMETERS['ubidots']['variable_label']}"
+                        )
             
                         ubidots_start_time = time.time()
                 

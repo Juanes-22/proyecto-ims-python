@@ -20,10 +20,10 @@ class Logger:
 
         ts = datetime.strftime(self.data_dict['time_stamp'], "%Y-%m-%d %H:%M:%S")
         
-        print('-' * 120)
-        print("- dataLogger -\n")
-        print("time_stamp: {}".format(ts))
-        print("value: {}".format(self.data_dict['value']))
+        #print('-' * 120)
+        #print("- dataLogger -\n")
+        #print("time_stamp: {}".format(ts))
+        #print("value: {}".format(self.data_dict['value']))
 
     def log_data(self):
         ''' log the data into csv file '''
