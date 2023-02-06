@@ -39,7 +39,7 @@ APP_PARAMETERS = {
 }
 
 
-def main():
+def main() -> None:
     print("""
     Project: IMS IoT gauge
     Author: Juan Garcia
@@ -66,16 +66,16 @@ def main():
     # setup CSV data logger for gauge readings
     lg = Logger()
     
-    # # set up google drive api for csv upload
-    # gd = GoogleDrive(
-    #     credentials_json_path=os.path.join(os.getcwd(), "src", "gdrive", "credentials.json")
-    # )
+    # set up google drive api for csv upload
+    gd = GoogleDrive(
+        credentials_json_path=os.path.join(os.getcwd(), "src", "gdrive", "credentials.json")
+    )
 
-    uploaded_file = False
     
     # main loop
     while True:
         try:
+            uploaded_file = False
             csv_created = False
 
             # setup BLE
@@ -125,14 +125,29 @@ def main():
                 
                 # BLE peripheral disconnected
                 except btle.BTLEException as e:
-                    # export file to google drive
+                    # upload file to google drive
                     if uploaded_file == False:
-                        # file_path = os.path.join(os.getcwd(), "src", "csv_logger", "data", lg.file_name)
+                        file_path = os.path.join(os.getcwd(), "src", "csv_logger", "data", lg.file_name)
+
+                        gd.upload_csv_file(
+                            parents=[APP_PARAMETERS['gdrive']['parent_folder_id']],
+                            file_path=file_path,
+                            folder_name=APP_PARAMETERS['gdrive']['folder_name'])
+
+                        uploaded_file = True
+                    
+                    # breaks the loop to start trying to connect again
+                    break
+
+                except BrokenPipeError as e:
+                    # upload file to google drive
+                    if uploaded_file == False:
+                        file_path = os.path.join(os.getcwd(), "src", "csv_logger", "data", lg.file_name)
                         
-                        # gd.upload_csv_file(
-                        #     parents=[APP_PARAMETERS['gdrive']['parent_folder_id']],
-                        #     file_path=file_path,
-                        #     folder_name=APP_PARAMETERS['gdrive']['folder_name'])
+                        gd.upload_csv_file(
+                            parents=[APP_PARAMETERS['gdrive']['parent_folder_id']],
+                            file_path=file_path,
+                            folder_name=APP_PARAMETERS['gdrive']['folder_name'])
                         
                         uploaded_file = True
                     
@@ -145,6 +160,7 @@ def main():
         
         except BrokenPipeError as e:
             pass
+
 
 if __name__ == '__main__':
     main()
