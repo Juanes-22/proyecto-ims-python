@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 import logging
 
 from bluepy import btle
-from googleapiclient.errors import HttpError
 
 from ble import BLECentral
 from mqtt import MQTTClient
