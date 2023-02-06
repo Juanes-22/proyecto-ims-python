@@ -1,5 +1,6 @@
 import os
 import os.path
+import logging
 
 from oauth2client.service_account import ServiceAccountCredentials
 from googleapiclient.discovery import build
@@ -8,17 +9,22 @@ from googleapiclient.http import MediaFileUpload
 
 
 class GoogleDrive:
-    def __init__(self) -> None:
-        SCOPES = ["https://www.googleapis.com/auth/drive"]
+    SCOPES = ["https://www.googleapis.com/auth/drive"]
 
-        self.creds = ServiceAccountCredentials.from_json_keyfile_name(os.path.join(os.getcwd(), "src", "gdrive_exporter", "credentials.json"), SCOPES)
-        
-        # create drive api client
-        self.service = build("drive", "v3", credentials=self.creds)
+    def __init__(self, credentials_json_path: str) -> None:
+        self.credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_json_path, GoogleDrive.SCOPES)
+        self.service = build("drive", "v3", credentials=self.credentials)
 
     def upload_csv_file(self, file_path: str, folder_name: str, parents: list=None) -> None:
+        """Upload a csv file to google drive folder
+
+        Args:
+            file_path: Path for the csv file
+            folder_name: Name of the folder that will contain the file (if not created)
+            parents: Parent folder IDs
+        """
         try:
-            # call the Drive v3 API
+            # check if folder exists
             response = self.service.files().list(
                 q=f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'",
                 spaces='drive'
@@ -30,7 +36,8 @@ class GoogleDrive:
                     'mimeType': 'application/vnd.google-apps.folder',
                     'parents': parents
                 }
-
+                
+                # if the folder does not exists, create it
                 file = self.service.files().create(
                     body=file_metadata, 
                     fields='id'
@@ -38,10 +45,12 @@ class GoogleDrive:
 
                 folder_id = file.get('id')
 
-                print("Created folder ID: {}".format(file.get('id')))
+                logging.info("\t[GDRIVEAPI] Created folder ID: {}".format(file.get('id')))
             else:
+                # store the folder id
                 folder_id = response['files'][0]['id']
 
+            # set up the csv file to upload
             file_metadata = {
                 'name': os.path.basename(file_path).replace('.csv', ''),
                 'mimeType': 'application/vnd.google-apps.spreadsheet',
@@ -50,23 +59,23 @@ class GoogleDrive:
 
             media = MediaFileUpload(filename=file_path, mimetype='text/csv')
 
+            # upload the csv file
             uploaded_file = self.service.files().create(body=file_metadata, 
                                                     media_body=media, 
                                                     fields='id').execute()
 
-            print("Uploaded file ID: {}".format(uploaded_file.get('id')))
-                        
+            logging.info(f"\t[GDRIVEAPI] Uploaded file ID: {uploaded_file.get('id')}")
+        
         except HttpError as error:
-            print("An error ocurred: {}".format(error))
+            logging.error(f"\t[GDRIVEAPI] An error ocurred: {error}")
 
-    def delete_file(self, file_id):
+    def delete_file(self, file_id: str) -> None:
         """Permanently delete a file, skipping the trash.
 
         Args:
-            service: Drive API service instance.
             file_id: ID of the file to delete.
         """
         try:
             self.service.files().delete(fileId=file_id).execute()
         except HttpError as error:
-            print("An error ocurred: {}".format(error))
+            logging.error(f"\t[GDRIVEAPI] An error ocurred: {error}")

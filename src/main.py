@@ -3,13 +3,15 @@ import os.path
 import time
 from datetime import datetime
 from dotenv import load_dotenv
+import logging
 
 from bluepy import btle
+from googleapiclient.errors import HttpError
 
-import ble_resources
-from ubidots_resources import Ubidots
+from ble import BLECentral
+from mqtt import MQTTClient
+from gdrive import GoogleDrive
 from csv_logger import Logger
-from gdrive_exporter import GoogleDrive
 
 
 # load environmental variables
@@ -44,35 +46,44 @@ def main():
     Email: <juane.garciam@upb.edu.co>
     Repository: <https://github.com/Juanes-22/ProyectoIMS>
     """)
-
-    # setup ubidots
-    ubi = Ubidots(
-        token=APP_PARAMETERS['ubidots']['token'],
-        broker=APP_PARAMETERS['ubidots']['broker']
+    
+    # setup logging module for debug purposes
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # setup CSV data logger for gauge readings
-    lg = Logger()
+    # # setup ubidots
+    # ubi = MQTTClient(
+    #     broker=APP_PARAMETERS['ubidots']['broker'],
+    #     username=APP_PARAMETERS['ubidots']['token'],
+    #     password="",
+    # )
+
+    # # setup CSV data logger for gauge readings
+    # lg = Logger()
     
-    # set up google drive api for log exporting
-    gd = GoogleDrive()
+    # # set up google drive api for csv upload
+    # gd = GoogleDrive(
+    #     credentials_json_path=os.path.join(os.getcwd(), "src", "gdrive", "credentials.json")
+    # )
 
     uploaded_file = False
     
+    # main loop
     while True:
         try:
             csv_created = False
 
-            # set up BLE peripheral
-            print("Connecting...")
-            p = btle.Peripheral(APP_PARAMETERS['ble']['mac_address'])
+            # setup BLE
+            ble = BLECentral()
 
-            print("Discovering Services...")
-            _ = p.services
-            gauge_service = p.getServiceByUUID(APP_PARAMETERS['ble']['service_uuid'])
-            
-            print("Discovering Characteristics...")
-            _ = gauge_service.getCharacteristics()
+            # try to connect to BLE peripheral
+            ble.connect_to_peripheral(
+                mac_address=APP_PARAMETERS['ble']['mac_address'],
+                service_uuid=APP_PARAMETERS['ble']['service_uuid']
+            )
 
             logger_start_time = time.time()
             ubidots_start_time = time.time()
@@ -81,62 +92,57 @@ def main():
             while True:
                 try:
                     # read gauge reading from BLE peripheral
-                    gauge_reading = ble_resources.read_gauge_reading(
-                        service=gauge_service,
-                        char_uuid=APP_PARAMETERS['ble']['char_uuid'])
-
-                    print(f"Gauge value: {round(gauge_reading, 2)}")
+                    gauge_reading = ble.read_gauge_reading(
+                        char_uuid=APP_PARAMETERS['ble']['char_uuid']
+                    )
                     
                     if not csv_created:
-                        # setup logger file name
-                        timestamp = datetime.now()
-                        formated_timestamp = datetime.strftime(timestamp, "%Y-%m-%d %H %M %S")
-                        lg.file_name = "{}.csv".format(formated_timestamp)
+                        # setup csv file name
+                        # timestamp = datetime.now()
+                        # formated_timestamp = datetime.strftime(timestamp, "%Y-%m-%d %H %M %S")
+                        # lg.file_name = f"{formated_timestamp}.csv"
 
                         csv_created = True
                     
+                    # log gauge reading to CSV file
                     if( time.time() - logger_start_time >= DATA_LOGGER_INTERVAL_IN_SECONDS ):
-                        # log gauge reading to CSV file
-                        lg.collect_data(gauge_reading)
-                        lg.log_data()
-                        lg.print_data()
+                        # lg.collect_data(gauge_reading)
+                        # lg.log_data()
+                        # lg.print_data()
                         
                         logger_start_time = time.time()
-            
+
+                    # publish data to ubidots MQTT broker
                     if( time.time() - ubidots_start_time >= UBIDOTS_PUBLISH_INTERVAL_IN_SECONDS ):
-                        # publish data to ubidots MQTT broker
-                        ubi.mqtt_publish(
-                            value=gauge_reading,
-                            topic=f"/v1.6/devices/{APP_PARAMETERS['ubidots']['device_label']}/{APP_PARAMETERS['ubidots']['variable_label']}"
-                        )
+                        # ubi.publish(
+                        #     msg='{"value": ' + str(gauge_reading) + '}',
+                        #     topic=f"/v1.6/devices/{APP_PARAMETERS['ubidots']['device_label']}/{APP_PARAMETERS['ubidots']['variable_label']}"
+                        # )
             
                         ubidots_start_time = time.time()
                 
+                # BLE peripheral disconnected
                 except btle.BTLEException as e:
+                    # export file to google drive
                     if uploaded_file == False:
-                        #print(f"Failed to connect to BLE peripheral {APP_PARAMETERS.ble.mac_address}...")
-                        print(e)
-
-                        file_path = os.path.join(os.getcwd(), "src", "csv_logger", "data", lg.file_name)
+                        # file_path = os.path.join(os.getcwd(), "src", "csv_logger", "data", lg.file_name)
                         
-                        # export file to google drive
-                        gd.upload_csv_file(
-                            parents=[APP_PARAMETERS['gdrive']['parent_folder_id']],
-                            file_path=file_path,
-                            folder_name=APP_PARAMETERS['gdrive']['folder_name'])
+                        # gd.upload_csv_file(
+                        #     parents=[APP_PARAMETERS['gdrive']['parent_folder_id']],
+                        #     file_path=file_path,
+                        #     folder_name=APP_PARAMETERS['gdrive']['folder_name'])
                         
                         uploaded_file = True
+                    
+                    # breaks the loop to start trying to connect again
                     break
-                except Exception as e:
-                    print(e)
-                    break
-
+        
+        # BLE peripheral connect failed
         except btle.BTLEException as e:
-            mac = APP_PARAMETERS["ble"]["mac_address"]
-            #print(f"Failed to connect to BLE peripheral {mac}...")
-            print(e)
-        except Exception as e:
-            print(e)
+            pass
+        
+        except BrokenPipeError as e:
+            pass
 
 if __name__ == '__main__':
     main()

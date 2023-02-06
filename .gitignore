@@ -1,5 +1,7 @@
 /src/csv_logger/data/*
 
+/src/gdrive_uploader/credentials.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
