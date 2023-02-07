@@ -6,7 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
-
+import httplib2.error
 
 class GoogleDrive:
     SCOPES = ["https://www.googleapis.com/auth/drive"]
@@ -14,6 +14,9 @@ class GoogleDrive:
     def __init__(self, credentials_json_path: str) -> None:
         self.credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_json_path, GoogleDrive.SCOPES)
         self.service = build("drive", "v3", credentials=self.credentials)
+
+        # setup logging
+        self.logger = logging.getLogger('gdrive')
 
     def upload_csv_file(self, file_path: str, folder_name: str, parents: list=None) -> None:
         """Upload a csv file to google drive folder
@@ -45,7 +48,7 @@ class GoogleDrive:
 
                 folder_id = file.get('id')
 
-                logging.info("\t[GDRIVEAPI] Created folder ID: {}".format(file.get('id')))
+                self.logger.info("Created folder ID: {}".format(file.get('id')))
             else:
                 # store the folder id
                 folder_id = response['files'][0]['id']
@@ -64,10 +67,16 @@ class GoogleDrive:
                                                     media_body=media, 
                                                     fields='id').execute()
 
-            logging.info(f"\t[GDRIVEAPI] Uploaded file ID: {uploaded_file.get('id')}")
+            self.logger.info(f"Uploaded file ID: {uploaded_file.get('id')}")
         
-        except HttpError as error:
-            logging.error(f"\t[GDRIVEAPI] An error ocurred: {error}")
+        except HttpError as e:
+            self.logger.error(f"An error ocurred: {e}")
+
+        except httplib2.error.ServerNotFoundError as e:
+            self.logger.error(f"An error ocurred: {e}")
+
+        except Exception as e:
+            self.logger.error(f"An error ocurred: {e}")
 
     def delete_file(self, file_id: str) -> None:
         """Permanently delete a file, skipping the trash.
@@ -77,5 +86,5 @@ class GoogleDrive:
         """
         try:
             self.service.files().delete(fileId=file_id).execute()
-        except HttpError as error:
-            logging.error(f"\t[GDRIVEAPI] An error ocurred: {error}")
+        except HttpError as e:
+            self.logger.error(f"An error ocurred: {e}")

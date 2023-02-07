@@ -1,0 +1,85 @@
+version: 1
+disable_existing_loggers: True
+
+formatters:
+  simple:
+    format: '%(asctime)s %(levelname)s %(name)s %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+
+  ble:
+    format: '%(asctime)s %(levelname)8s   [BLE] %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  
+  csv_logger:
+    format: '%(asctime)s %(levelname)8s   [CSVLOGGER] %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  
+  mqtt:
+    format: '%(asctime)s %(levelname)8s   [MQTT] %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  
+  gdrive:
+    format: '%(asctime)s %(levelname)8s   [GDRIVEAPI] %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+
+handlers:
+  console1:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: simple
+    stream: ext://sys.stdout
+
+  console2:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: ble
+    stream: ext://sys.stdout
+
+  console3:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: csv_logger
+    stream: ext://sys.stdout
+
+  console4:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: mqtt
+    stream: ext://sys.stdout
+
+  console5:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: gdrive
+    stream: ext://sys.stdout
+
+loggers:
+  default:
+    level: DEBUG
+    handlers: ['console1']
+    formatter: simple
+    propagate: False
+  
+  ble:
+    level: DEBUG
+    handlers: ['console2']
+    formatter: ble
+    propagate: False
+  
+  csv_logger:
+    level: DEBUG
+    handlers: ['console3']
+    formatter: csv_logger
+    propagate: False
+  
+  mqtt:
+    level: DEBUG
+    handlers: ['console4']
+    formatter: mqtt
+    propagate: False
+  
+  gdrive:
+    level: DEBUG
+    handlers: ['console5']
+    formatter: gdrive
+    propagate: False
