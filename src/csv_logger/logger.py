@@ -12,7 +12,7 @@ class DataLogger:
         self.logger = logging.getLogger('csv_logger')
 
     @property
-    def filename(self) -> None:
+    def filename(self) -> str:
         return self.filename
 
     @filename.setter
