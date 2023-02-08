@@ -5,22 +5,13 @@ from datetime import datetime
 
 from bluepy import btle
 
-import logging.config
-import yaml
-
-# setup logging module
-with open(os.path.abspath(os.path.join("src", "logging.yaml")), "r") as f:
-    config = yaml.safe_load(f.read())
-    logging.config.dictConfig(config)
-
+import setup_logging
+from settings import APP_CONFIG
 from ble.central import BLECentral
 from mqtt.client import MQTTClient
 from gdrive.client import GoogleDrive
 from csv_logger.logger import DataLogger
 
-
-
-from settings import APP_CONFIG
 
 def main() -> None:
     print("""
