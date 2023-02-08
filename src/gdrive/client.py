@@ -16,7 +16,7 @@ class GoogleDrive:
         self.service = build("drive", "v3", credentials=self.credentials)
 
         # setup logging
-        self.logger = logging.getLogger('gdrive')
+        self._logger = logging.getLogger('gdrive')
 
     def upload_csv_file(self, file_path: str, folder_name: str, parents: list=None) -> None:
         """Upload a csv file to google drive folder
@@ -48,7 +48,7 @@ class GoogleDrive:
 
                 folder_id = file.get('id')
 
-                self.logger.info("Created folder ID: {}".format(file.get('id')))
+                self._logger.info("Created folder ID: {}".format(file.get('id')))
             else:
                 # store the folder id
                 folder_id = response['files'][0]['id']
@@ -67,16 +67,16 @@ class GoogleDrive:
                                                     media_body=media, 
                                                     fields='id').execute()
 
-            self.logger.info(f"Uploaded file ID: {uploaded_file.get('id')}")
+            self._logger.info(f"Uploaded file ID: {uploaded_file.get('id')}")
         
         except HttpError as e:
-            self.logger.error(f"An error ocurred: {e}")
+            self._logger.error(f"An error ocurred: {e}")
 
         except httplib2.error.ServerNotFoundError as e:
-            self.logger.error(f"An error ocurred: {e}")
+            self._logger.error(f"An error ocurred: {e}")
 
         except Exception as e:
-            self.logger.error(f"An error ocurred: {e}")
+            self._logger.error(f"An error ocurred: {e}")
 
     def delete_file(self, file_id: str) -> None:
         """Permanently delete a file, skipping the trash.
@@ -87,4 +87,4 @@ class GoogleDrive:
         try:
             self.service.files().delete(fileId=file_id).execute()
         except HttpError as e:
-            self.logger.error(f"An error ocurred: {e}")
+            self._logger.error(f"An error ocurred: {e}")

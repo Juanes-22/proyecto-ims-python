@@ -31,16 +31,13 @@ def main() -> None:
     """)
    
     # setup ubidots
-    ubi = MQTTClient()
-
-    ubi.connect(
+    ubi = MQTTClient(
         broker=APP_CONFIG['UBIDOTS_CONFIG']['broker'],
         username=APP_CONFIG['UBIDOTS_CONFIG']['token'],
         password="",
     )
 
-    while not ubi.client.connected_flag:
-        time.sleep(1)
+    ubi.wait_for_connection()
 
     # setup CSV data logger for gauge readings
     lg = DataLogger(
@@ -96,7 +93,7 @@ def main() -> None:
                     # publish data to ubidots MQTT broker
                     if( time.time() - ubidots_start_time >= APP_CONFIG['UBIDOTS_CONFIG']['publish_interval_sec'] ):
                         ubi.publish(
-                            msg='{"value": ' + str(gauge_reading) + '}',
+                            payload='{"value": ' + str(gauge_reading) + '}',
                             topic=f"/v1.6/devices/{APP_CONFIG['UBIDOTS_CONFIG']['device_label']}/{APP_CONFIG['UBIDOTS_CONFIG']['variable_label']}"
                         )
             
