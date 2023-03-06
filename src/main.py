@@ -118,6 +118,8 @@ def main() -> None:
                         
                         uploaded_file = True
                     
+                    time.sleep(5)
+
                     # breaks the loop to start trying to connect again
                     break
         
