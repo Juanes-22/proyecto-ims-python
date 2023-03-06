@@ -29,6 +29,9 @@ class BLECentral:
         except BrokenPipeError as e:
             self._logger.error("Broken pipe")
             raise e
+        
+        except Exception as e:
+            raise e
             
     def read_gauge_reading(self, char_uuid: str) -> float:
         """Returns temperature from BLE Service in celsius"""

@@ -130,6 +130,10 @@ def main() -> None:
         except BrokenPipeError as e:
             pass
 
+        except Exception as e:
+            print(e)
+            pass
+
 
 if __name__ == '__main__':
     main()
