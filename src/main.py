@@ -65,9 +65,6 @@ def main() -> None:
                     gauge_reading = ble.read_gauge_reading(
                         char_uuid=APP_CONFIG['BLE_CONFIG']['char_uuid']
                     )
-
-                    if gauge_reading == 0:
-                        break
                     
                     if not csv_created:
                         # setup csv file name
