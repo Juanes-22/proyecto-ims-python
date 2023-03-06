@@ -27,7 +27,7 @@ class BLECentral:
             raise e
         
         except BrokenPipeError as e:
-            self._logger.error(e)
+            self._logger.error("Broken pipe")
             raise e
             
     def read_gauge_reading(self, char_uuid: str) -> float:
@@ -48,7 +48,7 @@ class BLECentral:
             raise e
         
         except BrokenPipeError as e:
-            self._logger.error(e)
+            self._logger.error("Broken pipe")
             raise e
 
     def read_temperature(self) -> float:
@@ -69,7 +69,7 @@ class BLECentral:
             raise e
         
         except BrokenPipeError as e:
-            self._logger.error(e)
+            self._logger.error("Broken pipe")
             raise e
 
     def read_humidity(self) -> float:
@@ -90,7 +90,7 @@ class BLECentral:
             raise e
         
         except BrokenPipeError as e:
-            self._logger.error(e)
+            self._logger.error("Broken pipe")
             raise e
 
     def read_pressure(self) -> float:
@@ -111,7 +111,7 @@ class BLECentral:
             raise e
 
         except BrokenPipeError as e:
-            self._logger.error(e)
+            self._logger.error("Broken pipe")
             raise e
 
 
