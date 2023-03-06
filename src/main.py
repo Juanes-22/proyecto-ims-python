@@ -40,6 +40,8 @@ def main() -> None:
         credentials_json_path=os.path.abspath(os.path.join("src", "gdrive", "credentials.json"))
     )
 
+    time.sleep(3)
+
     # main loop
     while True:
         try:

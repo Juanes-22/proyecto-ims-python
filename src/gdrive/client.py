@@ -17,6 +17,7 @@ class GoogleDrive:
 
         # setup logging
         self._logger = logging.getLogger('gdrive')
+        self._logger.info(f"Google Drive API initialized")
 
     def upload_csv_file(self, file_path: str, folder_name: str, parents: list=None) -> None:
         """Upload a csv file to google drive folder
