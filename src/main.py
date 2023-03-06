@@ -18,7 +18,7 @@ def main() -> None:
     Project: IMS IoT gauge
     Author: Juan Garcia
     Email: <juane.garciam@upb.edu.co>
-    Repository: <https://github.com/Juanes-22/ProyectoIMS>
+    Repository: <https://github.com/Juanes-22/proyecto-ims-python>
     """)
    
     # setup ubidots
