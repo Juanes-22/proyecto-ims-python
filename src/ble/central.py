@@ -13,7 +13,10 @@ class BLECentral:
     def connect_to_peripheral(self, mac_address: str, service_uuid: str) -> None:
         try:
             self._logger.info("Connecting...")
-            self._peripheral = btle.Peripheral(mac_address, timeout=3)
+            self._peripheral = btle.Peripheral(
+                deviceAddr=mac_address,
+                timeout=5
+            )
 
             self._logger.info("Discovering Services...")
             _ = self._peripheral.services
